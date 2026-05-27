@@ -55,6 +55,7 @@ export default class PlayerController extends cc.Component {
   private rDown: boolean = false;
   private spaceDown: boolean = false;
   private onGround: boolean = false;
+  private groundContacts: number = 0;
   private isDead: boolean = false;
   private shrinking: boolean = false;
   private invincible: boolean = false;
@@ -156,6 +157,8 @@ export default class PlayerController extends cc.Component {
   private die() {
     if (this.invincible) return;
     this.isDead = true;
+    this.groundContacts = 0;
+    this.onGround = false;
     this.lDown = this.rDown = this.spaceDown = false;
     cc.systemEvent.off(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
     cc.systemEvent.off(cc.SystemEvent.EventType.KEY_UP, this.onKeyUp, this);
@@ -184,6 +187,8 @@ export default class PlayerController extends cc.Component {
 
   private respawn() {
     this.isDead = false;
+    this.groundContacts = 0;
+    this.onGround = false;
     this.invincible = true;
     this.node.position = cc.v3(this.rebornPos.x, this.rebornPos.y, 0);
     this.node.getComponent(cc.PhysicsBoxCollider).enabled = true;
@@ -251,6 +256,21 @@ export default class PlayerController extends cc.Component {
     this.score += pts;
   }
 
+  private showScorePopup(pts: number, worldPos: cc.Vec3) {
+    const popup = new cc.Node("+"+pts);
+    const label = popup.addComponent(cc.Label);
+    label.string = "+" + pts;
+    label.fontSize = 20;
+    popup.color = new cc.Color(255, 255, 0, 255);
+    popup.setParent(this.node.parent);
+    popup.setPosition(worldPos.x, worldPos.y + 20, 0);
+    popup.runAction(cc.sequence(
+      cc.moveBy(0.6, cc.v2(0, 40)),
+      cc.fadeOut(0.3),
+      cc.removeSelf()
+    ));
+  }
+
   onBeginContact(contact, self, other) {
     let normal = contact.getWorldManifold().normal;
 
@@ -262,15 +282,17 @@ export default class PlayerController extends cc.Component {
         other.tag === 4 ||
         other.tag === 7
       ) {
+        this.groundContacts++;
         this.onGround = true;
         this.playIdleAnim();
       }
       // Stomp enemy
       else if (other.tag === 2) {
         cc.audioEngine.playEffect(this.stompSound, false);
-        this.getComponent(cc.RigidBody).linearVelocity = cc.v2(0, 400);
+        this.getComponent(cc.RigidBody).linearVelocity = cc.v2(0, 150);
         this.onGround = false;
         this.addScore(100);
+        this.showScorePopup(100, other.node.position);
       }
       // Fall out of world
       else if (other.node.name === "Lower_bound" || other.tag === 9) {
@@ -332,7 +354,8 @@ export default class PlayerController extends cc.Component {
       other.tag === 4 ||
       other.tag === 7
     ) {
-      this.onGround = false;
+      this.groundContacts = Math.max(0, this.groundContacts - 1);
+      if (this.groundContacts === 0) this.onGround = false;
     }
   }
 
