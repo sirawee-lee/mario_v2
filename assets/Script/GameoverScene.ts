@@ -80,12 +80,12 @@ export default class GameoverScene extends cc.Component {
         });
     }
 
-    onRetryBtn() {
+    onMenuBtn() {
         if (GameData.inst) GameData.inst.reset();
-        cc.director.loadScene("Level1");
+        cc.director.loadScene("MainMenu");
     }
 
-    onMenuBtn() {
+    onBackToMenuBtn() {
         if (GameData.inst) GameData.inst.reset();
         cc.director.loadScene("MainMenu");
     }

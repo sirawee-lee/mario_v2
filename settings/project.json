@@ -3,11 +3,24 @@
     "cloud-function"
   ],
   "group-list": [
-    "default"
+    "default",
+    "item",
+    "enemy"
   ],
   "collision-matrix": [
     [
-      true
+      true,
+      false,
+      false
+    ],
+    [
+      false,
+      false
+    ],
+    [
+      false,
+      false,
+      false
     ]
   ],
   "excluded-modules": [

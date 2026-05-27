@@ -50,9 +50,14 @@ export default class PlayerController extends cc.Component {
 
     onLoad() {
         cc.director.getPhysicsManager().enabled = true;
-        this.anim     = this.getComponent(cc.Animation);
-        this.rb       = this.getComponent(cc.RigidBody);
+        cc.director.getPhysicsManager().gravity = cc.v2(0, -640);
+        this.anim      = this.getComponent(cc.Animation);
+        this.rb        = this.getComponent(cc.RigidBody);
         this.rebornPos = cc.v2(this.node.x, this.node.y);
+
+        // friction = 0 ป้องกัน Mario ติดข้างกำแพง/ท่อตอนกระโดด
+        const col = this.getComponent(cc.PhysicsBoxCollider);
+        if (col) col.friction = 0;
 
         // คำนวณขอบ map จาก TileMap node (anchor 0.5)
         const tileMap = cc.find("Canvas/TileMap");
@@ -107,22 +112,46 @@ export default class PlayerController extends cc.Component {
     }
 
     // ===== Update =====
-    update(dt) {
+    update(_dt: number) {
         if (this.isDead) return;
 
-        let speed = 0;
-        if (this.lDown)      speed = -250;
-        else if (this.rDown) speed = 250;
+        let vx = 0;
+        if (this.lDown)      vx = -120;
+        else if (this.rDown) vx = 120;
 
         // clamp Mario ไม่ให้เกินขอบ map
         const halfW = cc.winSize.width / 2;
         const minX  = this.mapLeft  + halfW;
         const maxX  = this.mapRight - halfW;
-        this.node.x = Math.max(minX, Math.min(maxX, this.node.x + speed * dt));
+        if ((vx < 0 && this.node.x <= minX) || (vx > 0 && this.node.x >= maxX)) vx = 0;
+
+        // ป้องกันติดข้างกำแพง
+        const curVx = this.rb.linearVelocity.x;
+        if ((vx > 0 && curVx < -10) || (vx < 0 && curVx > 10)) vx = 0;
+
+        this.rb.linearVelocity = cc.v2(vx, this.rb.linearVelocity.y);
+
+        // เช็คพื้นด้วย raycast — แม่นยำกว่า onEndContact
+        this.checkGround();
 
         if (this.spaceDown && this.onGround) this.jump();
 
         this.updateCamera();
+    }
+
+    private checkGround() {
+        const worldPos = this.node.convertToWorldSpaceAR(cc.v2(0, 0));
+        const pm = cc.director.getPhysicsManager();
+        const footY  = worldPos.y - 8;
+        const checkY = worldPos.y - 12;
+        // ยิงกลาง + ซ้าย + ขวา — ถ้าจุดกลางมีพื้น หรือ ทั้งซ้ายและขวามีพื้น ถือว่าอยู่บนพื้น
+        const hit = (ox: number) => {
+            const r = pm.rayCast(cc.v2(worldPos.x + ox, footY), cc.v2(worldPos.x + ox, checkY), cc.RayCastType.Closest);
+            return r && r.length > 0 && r[0].collider.tag !== 2 && r[0].collider.tag !== 5;
+        };
+        const left  = hit(-3);
+        const right = hit(3);
+        this.onGround = left && right;
     }
 
     // Camera follow Mario โดย clamp ไม่ให้เห็นขอบดำ
@@ -140,7 +169,7 @@ export default class PlayerController extends cc.Component {
         this.onGround = false;
         this.anim.play(this.isBig ? "Big_jump" : "mario_jump");
         if (this.jumpSound) cc.audioEngine.playEffect(this.jumpSound, false);
-        this.rb.linearVelocity = cc.v2(0, 750);
+        this.rb.linearVelocity = cc.v2(0, 400);
     }
 
     // ===== Damage / Die =====
@@ -171,14 +200,16 @@ export default class PlayerController extends cc.Component {
         cc.audioEngine.pauseMusic();
         if (this.dieSound) cc.audioEngine.playEffect(this.dieSound, false);
 
-        this.lives--;
-        this.syncGameData();
-        this.updateUI();
-
-        if (this.lives <= 0) {
+        if (this.lives <= 1) {
+            this.lives = 0;
+            this.syncGameData();
+            this.updateUI();
             if (this.gameoverSound) cc.audioEngine.playEffect(this.gameoverSound, false);
             this.scheduleOnce(() => cc.director.loadScene("Gameover"), 3);
         } else {
+            this.lives--;
+            this.syncGameData();
+            this.updateUI();
             this.scheduleOnce(() => this.respawn(), 2);
         }
     }
@@ -233,15 +264,16 @@ export default class PlayerController extends cc.Component {
             return;
         }
 
+        if (other.tag === 5) { this.grow(); other.node.destroy(); }
+
         if (normal.y === -1) {
-            if (other.tag === 3 || other.node.name === "Ground") {
+            if (other.tag !== 2 && other.tag !== 5 && other.tag !== 8 && other.node.name !== "Lower_bound") {
                 this.onGround = true;
                 if (!this.lDown && !this.rDown)
                     this.anim.play(this.isBig ? "Big_idle" : "idle");
             }
             if (other.node.name === "Lower_bound") this.die();
             if (other.tag === 8) { this.addCoin(); other.node.destroy(); }
-            if (other.tag === 5) { this.grow();    other.node.destroy(); }
         }
 
         if (normal.y === 1 && other.tag === 4) {
@@ -263,8 +295,8 @@ export default class PlayerController extends cc.Component {
         }
     }
 
-    onEndContact(_contact: any, _self: any, other: any) {
-        if (other.tag === 3 || other.node.name === "Ground") this.onGround = false;
+    onEndContact(_contact: any, _self: any, _other: any) {
+        // onGround ถูกจัดการโดย checkGround() ใน update แล้ว
     }
 
     // ===== Helpers =====

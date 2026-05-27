@@ -12,7 +12,7 @@ export default class MainMenu extends cc.Component {
     }
 
     onStartBtn() {
-        cc.director.loadScene("Level1");
+        cc.director.loadScene("LevelSelect");
     }
 
     onExitBtn() {
