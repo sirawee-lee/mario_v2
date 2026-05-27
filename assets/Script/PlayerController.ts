@@ -7,56 +7,64 @@ const { ccclass, property } = cc._decorator;
 export default class PlayerController extends cc.Component {
 
     // --- Sprites ---
-    @property(cc.SpriteFrame)
-    smallMarioSprite: cc.SpriteFrame = null;
-
-    @property(cc.SpriteFrame)
-    bigMarioSprite: cc.SpriteFrame = null;
+    @property(cc.SpriteFrame) smallMarioSprite: cc.SpriteFrame | null = null;
+    @property(cc.SpriteFrame) bigMarioSprite:   cc.SpriteFrame | null = null;
 
     // --- Sounds ---
-    @property({ type: cc.AudioClip }) jumpSound: cc.AudioClip = null;
-    @property({ type: cc.AudioClip }) dieSound: cc.AudioClip = null;
-    @property({ type: cc.AudioClip }) growSound: cc.AudioClip = null;
-    @property({ type: cc.AudioClip }) shrinkSound: cc.AudioClip = null;
-    @property({ type: cc.AudioClip }) stompSound: cc.AudioClip = null;
-    @property({ type: cc.AudioClip }) coinSound: cc.AudioClip = null;
+    @property({ type: cc.AudioClip }) jumpSound:     cc.AudioClip = null;
+    @property({ type: cc.AudioClip }) dieSound:      cc.AudioClip = null;
+    @property({ type: cc.AudioClip }) growSound:     cc.AudioClip = null;
+    @property({ type: cc.AudioClip }) shrinkSound:   cc.AudioClip = null;
+    @property({ type: cc.AudioClip }) stompSound:    cc.AudioClip = null;
+    @property({ type: cc.AudioClip }) coinSound:     cc.AudioClip = null;
     @property({ type: cc.AudioClip }) gameoverSound: cc.AudioClip = null;
 
     // --- References ---
-    @property(cc.Node) mainCamera: cc.Node = null;
-    @property(GameManager) gameMgr: GameManager = null;
+    @property(cc.Node)    mainCamera: cc.Node | null = null;
+    @property(GameManager) gameMgr:  GameManager = null;
+
+    // ความกว้าง TileMap จริง (ดูจาก TileMap node > Size W)
+    @property mapPixelWidth: number = 3200;
 
     // --- State ---
-    isBig: boolean = false;
-    lives: number = 3;
-    score: number = 0;
-    coins: number = 0;
+    isBig      = false;
+    lives      = 3;
+    score      = 0;
+    coins      = 0;
 
-    private anim: cc.Animation = null;
-    private rb: cc.RigidBody = null;
-    private rebornPos: cc.Vec2 = null;
+    private anim:      cc.Animation = null;
+    private rb:        cc.RigidBody = null;
+    private rebornPos: cc.Vec2      = null;
 
-    private lDown: boolean = false;
-    private rDown: boolean = false;
-    private spaceDown: boolean = false;
-    private onGround: boolean = false;
-    private isDead: boolean = false;
-    private invincible: boolean = false;
-    private shrinking: boolean = false;
+    // ขอบ map ใน Canvas space (คำนวณจาก TileMap position)
+    private mapLeft:  number = 0;
+    private mapRight: number = 0;
+
+    private lDown     = false;
+    private rDown     = false;
+    private spaceDown = false;
+    private onGround  = false;
+    private isDead    = false;
+    private invincible = false;
+    private shrinking  = false;
 
     onLoad() {
         cc.director.getPhysicsManager().enabled = true;
-        this.anim = this.getComponent(cc.Animation);
-        this.rb   = this.getComponent(cc.RigidBody);
+        this.anim     = this.getComponent(cc.Animation);
+        this.rb       = this.getComponent(cc.RigidBody);
         this.rebornPos = cc.v2(this.node.x, this.node.y);
 
-        // โหลดชีวิตจาก GameData
+        // คำนวณขอบ map จาก TileMap node (anchor 0.5)
+        const tileMap = cc.find("Canvas/TileMap");
+        if (tileMap) {
+            this.mapLeft  = tileMap.x - this.mapPixelWidth / 2;
+            this.mapRight = tileMap.x + this.mapPixelWidth / 2;
+        }
+
         if (GameData.inst) {
             this.lives = GameData.inst.lives;
             this.score = GameData.inst.score;
             this.coins = GameData.inst.coins;
-        } else {
-            this.lives = 3;
         }
     }
 
@@ -65,6 +73,7 @@ export default class PlayerController extends cc.Component {
         cc.systemEvent.on(cc.SystemEvent.EventType.KEY_UP,   this.onKeyUp,   this);
         this.anim.play("idle");
         this.updateUI();
+        this.updateCamera();
     }
 
     // ===== Input =====
@@ -86,7 +95,7 @@ export default class PlayerController extends cc.Component {
 
     onKeyUp(event) {
         const k = event.keyCode;
-        if (k === cc.macro.KEY.left || k === 65) {
+        if (k === cc.macro.KEY.left  || k === 65) {
             this.lDown = false;
             if (!this.rDown) this.anim.play(this.isBig ? "Big_idle" : "idle");
         } else if (k === cc.macro.KEY.right || k === 68) {
@@ -102,13 +111,28 @@ export default class PlayerController extends cc.Component {
         if (this.isDead) return;
 
         let speed = 0;
-        if (this.lDown)       speed = -250;
-        else if (this.rDown)  speed = 250;
-        this.node.x += speed * dt;
+        if (this.lDown)      speed = -250;
+        else if (this.rDown) speed = 250;
+
+        // clamp Mario ไม่ให้เกินขอบ map
+        const halfW = cc.winSize.width / 2;
+        const minX  = this.mapLeft  + halfW;
+        const maxX  = this.mapRight - halfW;
+        this.node.x = Math.max(minX, Math.min(maxX, this.node.x + speed * dt));
 
         if (this.spaceDown && this.onGround) this.jump();
 
-        if (this.mainCamera) this.mainCamera.x = this.node.x;
+        this.updateCamera();
+    }
+
+    // Camera follow Mario โดย clamp ไม่ให้เห็นขอบดำ
+    private updateCamera() {
+        if (!this.mainCamera) return;
+        const halfW = cc.winSize.width / 2;
+        // clamp X: ไม่เลยขอบซ้าย/ขวาของ map
+        const camX = Math.max(this.mapLeft + halfW, Math.min(this.mapRight - halfW, this.node.x));
+        this.mainCamera.x = camX;
+        this.mainCamera.y = 0; // Y คงที่กลางจอเสมอ (Canvas origin Y=0 = กลาง)
     }
 
     // ===== Jump =====
@@ -123,11 +147,10 @@ export default class PlayerController extends cc.Component {
     takeDamage() {
         if (this.invincible || this.shrinking) return;
         if (this.isBig) {
-            // ตัวเล็กลง
             this.shrinking = true;
             this.isBig = false;
             this.anim.play("mario_shrink");
-            this.getComponent(cc.Sprite).spriteFrame = this.smallMarioSprite;
+            if (this.smallMarioSprite) this.getComponent(cc.Sprite).spriteFrame = this.smallMarioSprite;
             if (this.shrinkSound) cc.audioEngine.playEffect(this.shrinkSound, false);
             this.scheduleOnce(() => { this.shrinking = false; }, 1.5);
         } else {
@@ -154,9 +177,9 @@ export default class PlayerController extends cc.Component {
 
         if (this.lives <= 0) {
             if (this.gameoverSound) cc.audioEngine.playEffect(this.gameoverSound, false);
-            this.scheduleOnce(() => { cc.director.loadScene("Gameover"); }, 3);
+            this.scheduleOnce(() => cc.director.loadScene("Gameover"), 3);
         } else {
-            this.scheduleOnce(() => { this.respawn(); }, 2);
+            this.scheduleOnce(() => this.respawn(), 2);
         }
     }
 
@@ -167,7 +190,7 @@ export default class PlayerController extends cc.Component {
         this.node.position = cc.v3(this.rebornPos.x, this.rebornPos.y, 0);
         this.node.getComponent(cc.PhysicsBoxCollider).enabled = true;
         this.rb.linearVelocity = cc.v2(0, 0);
-        this.getComponent(cc.Sprite).spriteFrame = this.smallMarioSprite;
+        if (this.smallMarioSprite) this.getComponent(cc.Sprite).spriteFrame = this.smallMarioSprite;
         this.anim.play("idle");
         cc.audioEngine.resumeMusic();
         cc.systemEvent.on(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
@@ -180,7 +203,7 @@ export default class PlayerController extends cc.Component {
         if (this.isBig) return;
         this.isBig = true;
         this.anim.play("mario_grow");
-        this.getComponent(cc.Sprite).spriteFrame = this.bigMarioSprite;
+        if (this.bigMarioSprite) this.getComponent(cc.Sprite).spriteFrame = this.bigMarioSprite;
         if (this.growSound) cc.audioEngine.playEffect(this.growSound, false);
         this.addScore(200);
     }
@@ -199,10 +222,9 @@ export default class PlayerController extends cc.Component {
     }
 
     // ===== Collision =====
-    onBeginContact(contact, self, other) {
+    onBeginContact(contact: any, _self: any, other: any) {
         const normal = contact.getWorldManifold().normal;
 
-        // เหยียบ enemy จากบน
         if (normal.y === -1 && other.tag === 2) {
             if (this.stompSound) cc.audioEngine.playEffect(this.stompSound, false);
             this.rb.linearVelocity = cc.v2(this.rb.linearVelocity.x, 400);
@@ -211,37 +233,26 @@ export default class PlayerController extends cc.Component {
             return;
         }
 
-        // ลงพื้น
         if (normal.y === -1) {
             if (other.tag === 3 || other.node.name === "Ground") {
                 this.onGround = true;
-                if (!this.lDown && !this.rDown) {
+                if (!this.lDown && !this.rDown)
                     this.anim.play(this.isBig ? "Big_idle" : "idle");
-                }
             }
-            // ตกหลุม
             if (other.node.name === "Lower_bound") this.die();
-            // coin
             if (other.tag === 8) { this.addCoin(); other.node.destroy(); }
-            // mushroom
-            if (other.tag === 5) { this.grow(); other.node.destroy(); }
+            if (other.tag === 5) { this.grow();    other.node.destroy(); }
         }
 
-        // โดน Q-block จากล่าง
         if (normal.y === 1 && other.tag === 4) {
-            let qblock = other.node.getComponent("Qblock");
+            const qblock = other.node.getComponent("Qblock");
             if (qblock) (qblock as any).onHit();
         }
 
-        // ชน enemy ด้านข้าง
-        if (Math.abs(normal.y) < 0.5 && other.tag === 2) {
-            this.takeDamage();
-        }
+        if (Math.abs(normal.y) < 0.5 && other.tag === 2) this.takeDamage();
 
-        // ตกหลุม (ด้านข้าง)
         if (other.node.name === "Lower_bound") this.die();
 
-        // ถึงธง goal
         if (other.tag === 6) {
             contact.disabled = true;
             this.lDown = this.rDown = false;
@@ -252,10 +263,8 @@ export default class PlayerController extends cc.Component {
         }
     }
 
-    onEndContact(contact, self, other) {
-        if (other.tag === 3 || other.node.name === "Ground") {
-            this.onGround = false;
-        }
+    onEndContact(_contact: any, _self: any, other: any) {
+        if (other.tag === 3 || other.node.name === "Ground") this.onGround = false;
     }
 
     // ===== Helpers =====
