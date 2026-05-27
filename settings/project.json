@@ -1,0 +1,72 @@
+{
+  "migrate-history": [
+    "cloud-function"
+  ],
+  "group-list": [
+    "default"
+  ],
+  "collision-matrix": [
+    [
+      true
+    ]
+  ],
+  "excluded-modules": [
+    "3D Physics/Builtin"
+  ],
+  "preview-port": 7456,
+  "design-resolution-width": 960,
+  "design-resolution-height": 640,
+  "fit-width": false,
+  "fit-height": true,
+  "use-project-simulator-setting": false,
+  "simulator-orientation": false,
+  "use-customize-simulator": true,
+  "simulator-resolution": {
+    "width": 960,
+    "height": 640
+  },
+  "clear-simulator-cache": true,
+  "facebook": {
+    "enable": false,
+    "appID": "",
+    "live": {
+      "enable": false
+    },
+    "audience": {
+      "enable": false
+    }
+  },
+  "scenes": [
+    {
+      "type": "scene",
+      "url": "db://assets/MainMenu.fire",
+      "uuid": "1e53542e-d6ec-4396-8fbd-5bac1f5fe427"
+    },
+    {
+      "type": "scene",
+      "url": "db://assets/LevelSelect.fire",
+      "uuid": "94efbf17-ad0a-4f02-b3ce-97b66952b538"
+    },
+    {
+      "type": "scene",
+      "url": "db://assets/Level1.fire",
+      "uuid": "cc9a40dc-aafb-4af2-96ed-04ecd09f93d3"
+    },
+    {
+      "type": "scene",
+      "url": "db://assets/Level2.fire",
+      "uuid": "121354b5-4098-429e-b149-074c1159877c"
+    },
+    {
+      "type": "scene",
+      "url": "db://assets/Gameover.fire",
+      "uuid": "cfb5132a-0fa5-47e3-8c16-bc7fa0df3a02"
+    },
+    {
+      "type": "scene",
+      "url": "db://assets/VictoryScene.fire",
+      "uuid": "4458b22d-c618-4991-b348-359e5b1df153"
+    }
+  ],
+  "launch-scene": "db://assets/MainMenu.fire"
+}
