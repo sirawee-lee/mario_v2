@@ -10,6 +10,7 @@ export default class GameData extends cc.Component {
     score: number = 0;
     lives: number = 3;
     coins: number = 0;
+    level: number = 1;
     playerName: string = "Player";
     isLoggedIn: boolean = false;
 
@@ -23,5 +24,6 @@ export default class GameData extends cc.Component {
         this.score = 0;
         this.lives = 3;
         this.coins = 0;
+        this.level = 1;
     }
 }

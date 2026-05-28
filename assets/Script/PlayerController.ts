@@ -283,16 +283,7 @@ export default class PlayerController extends cc.Component {
 
         if (Math.abs(normal.y) < 0.5 && other.tag === 2) this.takeDamage();
 
-        if (other.node.name === "Lower_bound") this.die();
-
-        if (other.tag === 6) {
-            contact.disabled = true;
-            this.lDown = this.rDown = false;
-            cc.systemEvent.off(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
-            cc.systemEvent.off(cc.SystemEvent.EventType.KEY_UP,   this.onKeyUp,   this);
-            this.anim.play(this.isBig ? "Big_win" : "mario_win");
-            if (this.gameMgr) this.gameMgr.triggerWin();
-        }
+        // tag=6 (flagpole) จัดการโดย FlagPole.ts
     }
 
     onEndContact(_contact: any, _self: any, _other: any) {

@@ -16,6 +16,7 @@ export default class GameManager extends cc.Component {
     private livesLabel: cc.Label = null;
     private coinsLabel: cc.Label = null;
     private timeLabel: cc.Label = null;
+    private levelLabel: cc.Label = null;
 
     remainTime: number = 300;
     private isWin: boolean = false;
@@ -46,11 +47,18 @@ export default class GameManager extends cc.Component {
         let livesNode = cc.find("Canvas/Main Camera/UI/TopBar/Lives/number");
         let coinsNode = cc.find("Canvas/Main Camera/UI/TopBar/Coins/number");
         let timeNode  = cc.find("Canvas/Main Camera/UI/TopBar/Time/value");
+        let levelNode = cc.find("Canvas/Main Camera/UI/TopBar/Level");
 
         if (scoreNode) this.scoreLabel = scoreNode.getComponent(cc.Label);
         if (livesNode) this.livesLabel = livesNode.getComponent(cc.Label);
         if (coinsNode) this.coinsLabel = coinsNode.getComponent(cc.Label);
         if (timeNode)  this.timeLabel  = timeNode.getComponent(cc.Label);
+        if (levelNode) {
+            this.levelLabel = levelNode.getComponent(cc.Label);
+            if (this.levelLabel && GameData.inst) {
+                this.levelLabel.string = "Level: " + GameData.inst.level;
+            }
+        }
     }
 
     update(dt) {
@@ -84,8 +92,8 @@ export default class GameManager extends cc.Component {
         cc.audioEngine.stopMusic();
         if (this.victorySound) cc.audioEngine.playMusic(this.victorySound, false);
         this.scheduleOnce(() => {
-            cc.director.loadScene("Gameover");
-        }, 4);
+            cc.director.loadScene("LevelClear");
+        }, 3);
     }
 
     triggerGameover() {
