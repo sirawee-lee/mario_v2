@@ -23,10 +23,12 @@ export default class LevelClear extends cc.Component {
 
     onNextLevel() {
         if (!GameData.inst) return;
-        const nextLevel = GameData.inst.level + 1;
-        GameData.inst.level = nextLevel;
-        const sceneName = nextLevel <= 2 ? `Level${nextLevel}` : "Level1";
-        cc.director.loadScene(sceneName);
+        if (GameData.inst.level >= 2) {
+            cc.director.loadScene("ThanksForPlaying");
+        } else {
+            GameData.inst.level++;
+            cc.director.loadScene(`Level${GameData.inst.level}`);
+        }
     }
 
     onMainMenu() {

@@ -1,3 +1,5 @@
+import GameData from "./GameData";
+
 const { ccclass, property } = cc._decorator;
 
 @ccclass
@@ -77,14 +79,15 @@ export default class FlagPole extends cc.Component {
             this.schedule(tick, interval, timeLeft - 1);
         }
 
-        // รอ score นับจบ (4 วิ) + 1 วิ buffer แล้วเข้า LevelClear
+        // รอ score นับจบ (4 วิ) + 1 วิ buffer แล้วเข้า scene ถัดไป
         this.scheduleOnce(() => {
             popup.destroy();
             cc.audioEngine.stopMusic();
             if (gameMgr && gameMgr.victorySound) {
                 cc.audioEngine.playMusic(gameMgr.victorySound, false);
             }
-            cc.director.loadScene("LevelClear");
+            const nextScene = (GameData.inst && GameData.inst.level >= 2) ? "ThanksForPlaying" : "LevelClear";
+            cc.director.loadScene(nextScene);
         }, 5);
     }
 

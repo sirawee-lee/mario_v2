@@ -60,7 +60,7 @@ export default class Enemy_Goomba extends cc.Component {
         if (this.isDead) return;
         const normal = contact.getWorldManifold().normal;
 
-        if (normal.y === 1 && other.tag === 1) {
+        if (normal.y > 0.7 && other.tag === 1) {
             this.stomp();
             return;
         }

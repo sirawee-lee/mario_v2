@@ -13,14 +13,19 @@ export default class LevelSelect extends cc.Component {
     }
 
     onLevel1Btn() {
-        if (GameData.inst) GameData.inst.reset();
-        cc.director.loadScene("Level1");
+        if (GameData.inst) {
+            GameData.inst.reset();
+            GameData.inst.level = 1;
+        }
+        cc.director.loadScene("GameIntro");
     }
 
     onLevel2Btn() {
-        if (GameData.inst) GameData.inst.reset();
-        // Level2 ยังใช้ map เดียวกับ Level1 ไปก่อน
-        cc.director.loadScene("Level1");
+        if (GameData.inst) {
+            GameData.inst.reset();
+            GameData.inst.level = 2;
+        }
+        cc.director.loadScene("GameIntro");
     }
 
     onBackBtn() {

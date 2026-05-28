@@ -62,7 +62,7 @@ export default class Enemy_Koopa extends cc.Component {
         const normal = contact.getWorldManifold().normal;
 
         // Mario เหยียบ
-        if (normal.y === 1 && other.tag === 1) {
+        if (normal.y > 0.7 && other.tag === 1) {
             if (this.state === "walk") {
                 this.firstStomp(other.node);
             } else if (this.state === "shell_idle") {

@@ -147,11 +147,12 @@ export default class PlayerController extends cc.Component {
         // ยิงกลาง + ซ้าย + ขวา — ถ้าจุดกลางมีพื้น หรือ ทั้งซ้ายและขวามีพื้น ถือว่าอยู่บนพื้น
         const hit = (ox: number) => {
             const r = pm.rayCast(cc.v2(worldPos.x + ox, footY), cc.v2(worldPos.x + ox, checkY), cc.RayCastType.Closest);
-            return r && r.length > 0 && r[0].collider.tag !== 2 && r[0].collider.tag !== 5;
+            return r && r.length > 0 && r[0].collider.tag !== 2 && r[0].collider.tag !== 5 && r[0].collider.tag !== 9 && r[0].collider.tag !== 10;
         };
-        const left  = hit(-3);
-        const right = hit(3);
-        this.onGround = left && right;
+        const center = hit(0);
+        const left   = hit(-3);
+        const right  = hit(3);
+        this.onGround = center || (left && right) || left || right;
     }
 
     // Camera follow Mario โดย clamp ไม่ให้เห็นขอบดำ
@@ -282,6 +283,8 @@ export default class PlayerController extends cc.Component {
         if (normal.y === 1 && other.tag === 4) {
             const qblock = other.node.getComponent("Qblock");
             if (qblock) (qblock as any).onHit();
+            const coinBlock = other.node.getComponent("CoinBlock");
+            if (coinBlock) (coinBlock as any).onHit();
         }
 
         if (Math.abs(normal.y) < 0.5 && other.tag === 2) this.takeDamage();
