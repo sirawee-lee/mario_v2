@@ -1,28 +1,31 @@
 import GameData from "./GameData";
+import FirebaseService from "./FirebaseService";
 
 const { ccclass, property } = cc._decorator;
 
 @ccclass
 export default class ThanksForPlaying extends cc.Component {
 
-    @property(cc.Label) scoreLabel: cc.Label = null;
-    @property(cc.Label) livesLabel: cc.Label = null;
-    @property(cc.Label) coinsLabel: cc.Label = null;
     @property(cc.AudioClip) bgm: cc.AudioClip = null;
+    @property(cc.Label) scoreLabel: cc.Label = null;
 
     start() {
         cc.audioEngine.stopMusic();
         if (this.bgm) cc.audioEngine.playMusic(this.bgm, true);
 
         if (GameData.inst) {
-            if (this.scoreLabel) this.scoreLabel.string = "Score: " + GameData.inst.score;
-            if (this.livesLabel) this.livesLabel.string = "Lives: x" + GameData.inst.lives;
-            if (this.coinsLabel) this.coinsLabel.string = "Coins: " + GameData.inst.coins;
+            if (this.scoreLabel)
+                this.scoreLabel.string = "Score: " + GameData.inst.score;
+
+            FirebaseService.submitScore(
+                GameData.inst.playerName || "Player",
+                GameData.inst.score
+            ).catch(() => {});
         }
     }
 
     onLeaderboardBtn() {
-        // เชื่อม Firebase ทีหลัง
+        cc.director.loadScene("Leaderboard");
     }
 
     onMainMenuBtn() {
