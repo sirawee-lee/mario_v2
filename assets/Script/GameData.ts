@@ -1,6 +1,5 @@
 const { ccclass } = cc._decorator;
 
-// Singleton เก็บ score/lives ข้าม scene
 @ccclass
 export default class GameData extends cc.Component {
 
@@ -12,6 +11,7 @@ export default class GameData extends cc.Component {
     coins: number = 0;
     level: number = 1;
     playerName: string = "Player";
+    idToken: string = "";
     isLoggedIn: boolean = false;
 
     onLoad() {
@@ -25,5 +25,11 @@ export default class GameData extends cc.Component {
         this.lives = 3;
         this.coins = 0;
         this.level = 1;
+    }
+
+    logout() {
+        this.isLoggedIn = false;
+        this.playerName = "Player";
+        this.idToken = "";
     }
 }
