@@ -81,5 +81,6 @@
       "uuid": "4458b22d-c618-4991-b348-359e5b1df153"
     }
   ],
-  "launch-scene": "db://assets/MainMenu.fire"
+  "launch-scene": "db://assets/MainMenu.fire",
+  "last-module-event-record-time": 1779970730964
 }
