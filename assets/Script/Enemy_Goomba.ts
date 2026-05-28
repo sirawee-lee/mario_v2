@@ -65,14 +65,31 @@ export default class Enemy_Goomba extends cc.Component {
             return;
         }
 
-        // ชนสิ่งกีดขวางด้านข้าง → กลับทิศ (tag 3=wall, 7=pipe)
-        if (normal.x !== 0) {
+        // Goomba ชนกันเอง → ทะลุผ่านและกลับทิศ
+        if (other.tag === 2) {
+            contact.disabled = true;
+            this.flip();
+            return;
+        }
+
+        // flip เฉพาะชนผนัง/ท่อ — ไม่ flip เมื่อชน Mario (1), coin/sensor (8)
+        if (normal.x !== 0 && other.tag !== 1 && other.tag !== 8 && !other.sensor) {
             this.flip();
         }
 
         if (other.node.name === "Lower_bound") {
             this.node.destroy();
         }
+    }
+
+    killByShell() {
+        if (this.isDead) return;
+        const marioNode = cc.find("Canvas/Mario");
+        if (marioNode) {
+            const pc = marioNode.getComponent("PlayerController") as any;
+            if (pc) pc.addScore(100);
+        }
+        this.stomp();
     }
 
     private stomp() {
