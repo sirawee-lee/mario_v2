@@ -3,6 +3,11 @@ const { ccclass } = cc._decorator;
 @ccclass
 export default class Coin extends cc.Component {
 
+    onLoad() {
+        const rb = this.getComponent(cc.RigidBody);
+        if (rb) rb.enabledContactListener = true;
+    }
+
     onBeginContact(_contact: any, _self: any, other: any) {
         const pc = other.node.getComponent("PlayerController");
         if (pc) {

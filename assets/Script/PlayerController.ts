@@ -119,11 +119,8 @@ export default class PlayerController extends cc.Component {
         if (this.lDown)      vx = -120;
         else if (this.rDown) vx = 120;
 
-        // clamp Mario ไม่ให้เกินขอบ map
-        const halfW = cc.winSize.width / 2;
-        const minX  = this.mapLeft  + halfW;
-        const maxX  = this.mapRight - halfW;
-        if ((vx < 0 && this.node.x <= minX) || (vx > 0 && this.node.x >= maxX)) vx = 0;
+        // clamp Mario ไม่ให้เกินขอบ map (ใช้ขอบแผนที่จริง ไม่ขึ้นกับขนาดจอ)
+        if ((vx < 0 && this.node.x <= this.mapLeft) || (vx > 0 && this.node.x >= this.mapRight)) vx = 0;
 
         // ป้องกันติดข้างกำแพง
         const curVx = this.rb.linearVelocity.x;
@@ -277,7 +274,6 @@ export default class PlayerController extends cc.Component {
                     this.anim.play(this.isBig ? "Big_idle" : "idle");
             }
             if (other.node.name === "Lower_bound") this.die();
-            if (other.tag === 8) { this.addCoin(); other.node.destroy(); }
         }
 
         if (normal.y === 1 && other.tag === 4) {
