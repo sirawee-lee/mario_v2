@@ -82,8 +82,9 @@ export default class Enemy_Goomba extends cc.Component {
         }
     }
 
-    killByShell() {
+    killByShell(sound?: cc.AudioClip) {
         if (this.isDead) return;
+        if (sound) cc.audioEngine.playEffect(sound, false);
         const marioNode = cc.find("Canvas/Mario");
         if (marioNode) {
             const pc = marioNode.getComponent("PlayerController") as any;

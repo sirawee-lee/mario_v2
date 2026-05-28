@@ -99,14 +99,14 @@ export default class Enemy_Koopa extends cc.Component {
         // กระดองซิ่งชน Goomba (tag=2) → Goomba ตาย +100
         if (this.state === "shell_move" && other.tag === 2) {
             const goomba = other.node.getComponent("Enemy_Goomba") as any;
-            if (goomba) goomba.killByShell();
+            if (goomba) goomba.killByShell(this.stompSound);
             return;
         }
 
         // กระดองซิ่งชน Koopa ตัวอื่น (tag=9 หรือ 10) → ตาย +200
         if (this.state === "shell_move" && (other.tag === 9 || other.tag === 10)) {
             const koopa = other.node.getComponent("Enemy_Koopa") as any;
-            if (koopa) koopa.killByShell();
+            if (koopa) koopa.killByShell(this.stompSound);
             return;
         }
 
@@ -128,7 +128,8 @@ export default class Enemy_Koopa extends cc.Component {
         }
     }
 
-    killByShell() {
+    killByShell(sound?: cc.AudioClip) {
+        if (sound) cc.audioEngine.playEffect(sound, false);
         const marioNode = cc.find("Canvas/Mario");
         if (marioNode) {
             const pc = marioNode.getComponent("PlayerController") as any;
