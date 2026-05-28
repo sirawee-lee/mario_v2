@@ -179,12 +179,13 @@
     },
     "_enabled": true,
     "_defaultClip": {
-      "__uuid__": "cd079a92-f1df-4f8d-8670-47fe2f94a06b"
+      "__uuid__": "28450afe-ba9f-46a4-a05f-15969e175f3c"
     },
     "_clips": [
       {
-        "__uuid__": "cd079a92-f1df-4f8d-8670-47fe2f94a06b"
-      }
+        "__uuid__": "28450afe-ba9f-46a4-a05f-15969e175f3c"
+      },
+      null
     ],
     "playOnLoad": false,
     "_id": ""

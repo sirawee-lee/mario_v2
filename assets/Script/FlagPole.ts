@@ -16,7 +16,15 @@ export default class FlagPole extends cc.Component {
 
         contact.disabled = true;
 
-        // หยุด Mario ติดเสา
+        const gameMgr = pc.gameMgr as any;
+
+        // หยุด GameManager timer ทันที ป้องกัน triggerGameover
+        if (gameMgr) {
+            gameMgr.isWin = true;
+            gameMgr.remainTime = gameMgr.remainTime; // อ่านค่าก่อน freeze
+        }
+
+        // หยุด Mario
         pc.lDown = false;
         pc.rDown = false;
         pc.spaceDown = false;
@@ -26,7 +34,7 @@ export default class FlagPole extends cc.Component {
         cc.systemEvent.off(cc.SystemEvent.EventType.KEY_DOWN, pc.onKeyDown, pc);
         cc.systemEvent.off(cc.SystemEvent.EventType.KEY_UP,   pc.onKeyUp,   pc);
 
-        // คำนวณแต้มจากความสูงที่เกาะ
+        // คำนวณคะแนนเสา
         const poleWorldY = this.node.convertToWorldSpaceAR(cc.v2(0, 0)).y;
         const poleBottom = poleWorldY - this.poleHeight / 2;
         const marioWorldY = other.node.convertToWorldSpaceAR(cc.v2(0, 0)).y;
@@ -34,48 +42,92 @@ export default class FlagPole extends cc.Component {
         const segmentHit = Math.min(this.segments, Math.floor(heightFromBottom / (this.poleHeight / this.segments)) + 1);
         const poleBonus = segmentHit * this.scorePerSegment;
 
-        // แสดง popup คะแนนเสา
-        this.showPopup(other.node, `+${poleBonus}`, new cc.Color(255, 255, 0));
         pc.addScore(poleBonus);
+        this.showPopup(other.node, `+${poleBonus}`, new cc.Color(255, 255, 0));
 
-        // นับ time bonus แล้วแสดงทีละวินาที
-        const gameMgr = pc.gameMgr as any;
+        // อ่าน timeLeft ก่อน remainTime เป็น 0
         const timeLeft = gameMgr ? Math.ceil(gameMgr.remainTime) : 0;
-        const timeBonus = timeLeft * 555;
+
+        // หยุดเวลาหลังอ่านค่าแล้ว
+        if (gameMgr) gameMgr.remainTime = 0;
 
         this.scheduleOnce(() => {
-            this.showTimeBonus(other.node, pc, gameMgr, timeLeft, timeBonus);
+            this.showTimeBonus(other.node, pc, gameMgr, timeLeft);
         }, 0.8);
     }
 
-    private showTimeBonus(marioNode: cc.Node, pc: any, gameMgr: any, timeLeft: number, totalBonus: number) {
-        if (gameMgr) gameMgr.remainTime = 0;
+    private showTimeBonus(marioNode: cc.Node, pc: any, gameMgr: any, timeLeft: number) {
+        const totalBonus = timeLeft * 10;
 
-        // แสดง popup เวลาที่เหลือ + bonus
-        this.showPopup(marioNode, `Time ${timeLeft} × 555 = +${totalBonus}`, new cc.Color(255, 200, 50));
-        pc.addScore(totalBonus);
+        const popup = this.makeLabel(
+            marioNode.parent,
+            `Time ${timeLeft} × 10 = +${totalBonus}`,
+            marioNode.x, marioNode.y + 60
+        );
 
-        // trigger win หลังแสดง popup
+        // นับ score ทีละ tick ใน 4 วินาที
+        if (timeLeft > 0) {
+            const interval = 4.0 / timeLeft;
+            let remaining = timeLeft;
+            const tick = () => {
+                if (remaining <= 0) return;
+                pc.addScore(10);
+                remaining--;
+            };
+            this.schedule(tick, interval, timeLeft - 1);
+        }
+
+        // รอ score นับจบ (4 วิ) + 1 วิ buffer แล้วเข้า LevelClear
         this.scheduleOnce(() => {
-            pc.anim.play(pc.isBig ? "Big_win" : "mario_win");
-            if (gameMgr) gameMgr.triggerWin();
-        }, 1.5);
+            popup.destroy();
+            cc.audioEngine.stopMusic();
+            if (gameMgr && gameMgr.victorySound) {
+                cc.audioEngine.playMusic(gameMgr.victorySound, false);
+            }
+            cc.director.loadScene("LevelClear");
+        }, 5);
+    }
+
+    private makeLabel(parent: cc.Node, text: string, x: number, y: number): cc.Node {
+        const offsets = [[-2,-2],[2,-2],[-2,2],[2,2]];
+        for (const [ox, oy] of offsets) {
+            const shadow = new cc.Node();
+            const sl = shadow.addComponent(cc.Label);
+            sl.string = text;
+            sl.fontSize = 28;
+            sl.lineHeight = 34;
+            sl.overflow = cc.Label.Overflow.NONE;
+            shadow.color = new cc.Color(0, 0, 0);
+            shadow.setPosition(x + ox, y + oy);
+            parent.addChild(shadow, 9);
+        }
+
+        const node = new cc.Node();
+        const label = node.addComponent(cc.Label);
+        label.string = text;
+        label.fontSize = 28;
+        label.lineHeight = 34;
+        label.overflow = cc.Label.Overflow.NONE;
+        node.color = new cc.Color(255, 165, 0);
+        node.setPosition(x, y);
+        parent.addChild(node, 10);
+
+        return node;
     }
 
     private showPopup(refNode: cc.Node, text: string, color: cc.Color) {
-        const popup = new cc.Node();
-        const label = popup.addComponent(cc.Label);
+        const node = new cc.Node();
+        const label = node.addComponent(cc.Label);
         label.string = text;
-        label.fontSize = 22;
-        label.lineHeight = 26;
+        label.fontSize = 24;
+        label.lineHeight = 28;
         label.overflow = cc.Label.Overflow.NONE;
-        popup.color = color;
-        popup.setPosition(refNode.x, refNode.y + 40);
-        refNode.parent.addChild(popup);
+        node.color = color;
+        node.setPosition(refNode.x, refNode.y + 40);
+        refNode.parent.addChild(node, 10);
 
-        cc.tween(popup)
-            .to(1.5, { position: cc.v3(refNode.x, refNode.y + 100, 0), opacity: 0 })
-            .call(() => { popup.destroy(); })
+        cc.tween(node)
+            .by(0.5, { position: cc.v3(0, 30, 0) })
             .start();
     }
 }

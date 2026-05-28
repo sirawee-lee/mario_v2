@@ -6,9 +6,10 @@ export default class Enemy_Goomba extends cc.Component {
     @property({ type: cc.AudioClip })
     stompSound: cc.AudioClip = null;
 
-    private moveSpeed: number = 30;
+    private moveSpeed: number = 30;  // บวก = เดินซ้าย, ลบ = เดินขวา
     private isDead: boolean = false;
     private rb: cc.RigidBody = null;
+    private anim: cc.Animation = null;
     private canFlip: boolean = true;
     private flipCooldown: number = 0.6;
 
@@ -16,21 +17,25 @@ export default class Enemy_Goomba extends cc.Component {
         cc.director.getPhysicsManager().enabled = true;
         this.rb = this.getComponent(cc.RigidBody);
         if (this.rb) this.rb.allowSleep = false;
+        this.anim = this.getComponent(cc.Animation);
     }
 
     start() {
         if (this.rb) this.rb.linearVelocity = cc.v2(-this.moveSpeed, 0);
+        if (this.anim) this.anim.play("goomba_walk");
     }
 
     update(_dt: number) {
         if (this.isDead || !this.rb) return;
+        // ใช้ vx เดียวกันตลอด ไม่ negate ซ้ำ
         this.rb.linearVelocity = cc.v2(-this.moveSpeed, this.rb.linearVelocity.y);
         this.checkEdge();
     }
 
     private checkEdge() {
         if (!this.canFlip) return;
-        const dir = this.moveSpeed < 0 ? -1 : 1;
+        // dir: moveSpeed > 0 = กำลังเดินซ้าย, < 0 = เดินขวา
+        const dir = this.moveSpeed > 0 ? -1 : 1;
         const worldPos = this.node.convertToWorldSpaceAR(cc.v2(0, 0));
 
         // ยิงจากหน้าเท้า (ออกไปข้างหน้า halfW + 2px เผื่อ)

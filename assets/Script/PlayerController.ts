@@ -188,7 +188,7 @@ export default class PlayerController extends cc.Component {
     }
 
     private die() {
-        if (this.invincible) return;
+        if (this.invincible || this.isDead) return;
         this.isDead = true;
         this.lDown = this.rDown = this.spaceDown = false;
         cc.systemEvent.off(cc.SystemEvent.EventType.KEY_DOWN, this.onKeyDown, this);
@@ -205,7 +205,10 @@ export default class PlayerController extends cc.Component {
             this.syncGameData();
             this.updateUI();
             if (this.gameoverSound) cc.audioEngine.playEffect(this.gameoverSound, false);
-            this.scheduleOnce(() => cc.director.loadScene("Gameover"), 3);
+            this.scheduleOnce(() => {
+                if (this.gameMgr && this.gameMgr.isWin) return;
+                cc.director.loadScene("Gameover");
+            }, 3);
         } else {
             this.lives--;
             this.syncGameData();

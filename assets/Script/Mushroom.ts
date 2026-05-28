@@ -17,10 +17,12 @@ export default class Mushroom extends cc.Component {
     }
 
     onBeginContact(contact, self, other) {
+        // ชนท่อหรือกำแพงข้างๆ → กลับทิศ
         const normal = contact.getWorldManifold().normal;
-        if (normal.x !== 0 && (other.tag === 3 || other.node.name === "Ground")) {
+        if (Math.abs(normal.x) > 0.5 && other.tag !== 2) {
             this.moveSpeed *= -1;
         }
+        // ตกหลุม → destroy
         if (other.node.name === "Lower_bound") {
             this.node.destroy();
         }

@@ -19,7 +19,7 @@ export default class GameManager extends cc.Component {
     private levelLabel: cc.Label = null;
 
     remainTime: number = 300;
-    private isWin: boolean = false;
+    isWin: boolean = false;
     private isGameover: boolean = false;
 
     onLoad() {
@@ -70,7 +70,12 @@ export default class GameManager extends cc.Component {
 
         if (this.remainTime <= 0) {
             this.isGameover = true;
-            this.triggerGameover();
+            // เวลาหมด = Mario ตาย 1 ชีวิต ไม่ใช่ Gameover ทันที
+            const mario = cc.find("Canvas/Mario");
+            if (mario) {
+                const pc = mario.getComponent("PlayerController") as any;
+                if (pc) pc.takeDamage();
+            }
         }
     }
 
@@ -87,19 +92,10 @@ export default class GameManager extends cc.Component {
     }
 
     triggerWin() {
-        if (this.isWin) return;
-        this.isWin = true;
-        cc.audioEngine.stopMusic();
-        if (this.victorySound) cc.audioEngine.playMusic(this.victorySound, false);
-        this.scheduleOnce(() => {
-            cc.director.loadScene("LevelClear");
-        }, 3);
+        // FlagPole.ts จัดการ LevelClear โดยตรง ไม่ต้องทำอะไรที่นี่
     }
 
     triggerGameover() {
-        cc.audioEngine.stopMusic();
-        this.scheduleOnce(() => {
-            cc.director.loadScene("Gameover");
-        }, 2);
+        // Gameover จัดการโดย PlayerController เมื่อชีวิตหมดเท่านั้น
     }
 }
